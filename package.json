@@ -1,0 +1,71 @@
+{
+  "name": "loopback-callback-component",
+  "version": "0.1.0",
+  "description": "LoopBack 4 Callback Comoonent",
+  "keywords": [
+    "loopback-extension",
+    "loopback",
+    "Callback",
+    "loopback 4",
+    "open-api",
+    "lb4"
+  ],
+  "main": "index.js",
+  "engines": {
+    "node": ">=8.9"
+  },
+  "scripts": {
+    "acceptance": "lb-mocha \"dist/__tests__/acceptance/**/*.js\"",
+    "build:apidocs": "lb-apidocs",
+    "build": "lb-tsc",
+    "clean": "lb-clean loopback-callback-component*.tgz dist package api-docs *.tsbuildinfo",
+    "lint": "npm run prettier:check && npm run eslint",
+    "lint:fix": "npm run eslint:fix && npm run prettier:fix",
+    "prettier:cli": "lb-prettier \"**/*.ts\" \"**/*.js\"",
+    "prettier:check": "npm run prettier:cli -- -l",
+    "prettier:fix": "npm run prettier:cli -- --write",
+    "eslint": "lb-eslint --report-unused-disable-directives .",
+    "eslint:fix": "npm run eslint -- --fix",
+    "integration": "lb-mocha \"dist/__tests__/integration/**/*.js\"",
+    "pretest": "npm run clean && npm run build",
+    "test": "lb-mocha \"dist/__tests__/unit/**/*.js\" \"dist/__tests__/integration/**/*.js\" \"dist/__tests__/acceptance/**/*.js\"",
+    "unit": "lb-mocha \"dist/__tests__/unit/**/*.js\"",
+    "posttest": "npm run lint",
+    "verify": "npm pack && tar xf loopback-callback-component*.tgz && tree package && npm run clean",
+    "prepublishOnly": "npm run build"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/getlarge/loopback-callback-component"
+  },
+  "license": "ISC",
+  "files": [
+    "README.md",
+    "index.js",
+    "index.d.ts",
+    "dist",
+    "src",
+    "!*/__tests__"
+  ],
+  "dependencies": {
+    "@loopback/boot": "^1.7.1",
+    "@loopback/context": "^1.25.1",
+    "@loopback/core": "^1.12.1",
+    "@loopback/rest": "^1.25.1"
+  },
+  "devDependencies": {
+    "@loopback/build": "^3.0.1",
+    "@loopback/openapi-spec-builder": "^1.2.21",
+    "@loopback/testlab": "^1.10.1",
+    "@types/node": "^11.9.6",
+    "@typescript-eslint/eslint-plugin": "^2.15.0",
+    "@typescript-eslint/parser": "^2.15.0",
+    "eslint": "^6.8.0",
+    "eslint-config-prettier": "^6.9.0",
+    "eslint-plugin-eslint-plugin": "^2.1.0",
+    "eslint-plugin-mocha": "^6.2.2",
+    "prettier": "^1.17.1",
+    "source-map-support": "^0.5.16",
+    "typescript": "~3.7.4"
+  }
+}
