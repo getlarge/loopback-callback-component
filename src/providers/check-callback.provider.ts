@@ -21,7 +21,7 @@ export class CheckCallbackFnProvider implements Provider<CheckCallbackFn> {
   ): Promise<CallbackObject | undefined> {
     const callbackStrategy = await this.getStoreStrategy();
     if (!callbackStrategy) {
-      throw new Error('No valid strategy found for PubSubCheckCallbackFn');
+      throw new Error('No valid strategy found for CheckCallbackFn');
     }
     return callbackStrategy.checkCallback(request, response, options);
   }

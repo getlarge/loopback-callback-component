@@ -1,29 +1,30 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import {Request, Response} from '@loopback/rest';
-import {
-  ParameterObject,
-  RequestBodyObject,
-  ResponsesObject,
-} from '@loopback/openapi-v3';
+import {RequestBodyObject, ResponsesObject} from '@loopback/openapi-v3';
 
 export type Packet = {
   topic: string;
   payload: any;
 };
 
-// for now consider CallbackObject as CallbacksObject to reduce complexity
 export type CallbackObject = {
   // expression must be evaluated when response is received
+  [expression: string]: {
+    [method: string]: {
+      operationId: string;
+      description?: string;
+      requestBody?: RequestBodyObject;
+      parameters?: any;
+      responses?: ResponsesObject;
+    };
+  };
+};
+
+export interface CallbackMetadata {
   name: string;
   expression: string;
   method: string;
   parent: {path: string; method: string};
-  requestBody?: RequestBodyObject;
-  responses?: ResponsesObject;
-  parameters?: ParameterObject;
-};
-
-export interface CallbackMetadata extends CallbackObject {
   options?: Object;
 }
 
@@ -33,10 +34,8 @@ export interface CheckCallbackFn {
   >;
 }
 
-export interface SetCallbackFn {
-  (callback: CallbackObject, request: Request, result: any): Promise<
-    Packet | undefined
-  >;
+export interface ResolveCallbackFn {
+  (callback: CallbackObject, result: any): Promise<Packet>;
 }
 
 export interface CallbackStrategy {
@@ -45,11 +44,7 @@ export interface CallbackStrategy {
     response: Response,
     options?: Object,
   ): Promise<CallbackObject | undefined>;
-  setCallback(
-    callback: CallbackObject,
-    request: Request,
-    result: any,
-  ): Promise<Packet | undefined>;
+  resolveCallback(callback: CallbackObject, result: any): Promise<Packet>;
 }
 
 /* eslint-enable @typescript-eslint/no-explicit-any */

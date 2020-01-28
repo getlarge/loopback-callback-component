@@ -1,7 +1,7 @@
 import {BindingKey, CoreBindings, MetadataAccessor} from '@loopback/core';
 import {
   CheckCallbackFn,
-  SetCallbackFn,
+  ResolveCallbackFn,
   CallbackStrategy,
   CallbackMetadata,
 } from './types';
@@ -15,9 +15,9 @@ export namespace CallbackBindings {
     'callback.check',
   );
 
-  export const CALLBACK_SET = BindingKey.create<SetCallbackFn | undefined>(
-    'callback.set',
-  );
+  export const CALLBACK_RESOLVE = BindingKey.create<
+    ResolveCallbackFn | undefined
+  >('callback.resolve');
 
   export const METADATA = BindingKey.create<CallbackMetadata | undefined>(
     'callback.operationMetadata',

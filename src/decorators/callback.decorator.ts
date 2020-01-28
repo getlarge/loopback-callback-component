@@ -3,11 +3,6 @@ import {
   Constructor,
   MetadataInspector,
 } from '@loopback/core';
-import {
-  ParameterObject,
-  RequestBodyObject,
-  ResponsesObject,
-} from '@loopback/openapi-v3';
 import {CALLBACK_METADATA_KEY} from '../keys';
 import {CallbackMetadata} from '../types';
 
@@ -16,9 +11,6 @@ export function callback(
   expression: string,
   method: string,
   parent: {path: string; method: string},
-  requestBody?: RequestBodyObject,
-  responses?: ResponsesObject,
-  parameters?: ParameterObject,
   options?: Object,
 ) {
   return MethodDecoratorFactory.createDecorator<CallbackMetadata>(
@@ -28,9 +20,6 @@ export function callback(
       expression,
       method,
       parent,
-      requestBody,
-      responses,
-      parameters,
       options: options ?? {},
     },
   );

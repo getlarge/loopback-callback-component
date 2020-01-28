@@ -17,7 +17,7 @@
   "scripts": {
     "acceptance": "lb-mocha \"dist/__tests__/acceptance/**/*.js\"",
     "build:apidocs": "lb-apidocs",
-    "build": "lb-tsc",
+    "build": "npm run clean && lb-tsc",
     "clean": "lb-clean loopback-callback-component*.tgz dist package api-docs *.tsbuildinfo",
     "lint": "npm run prettier:check && npm run eslint",
     "lint:fix": "npm run eslint:fix && npm run prettier:fix",
@@ -51,7 +51,8 @@
     "@loopback/boot": "^1.7.1",
     "@loopback/context": "^1.25.1",
     "@loopback/core": "^1.12.1",
-    "@loopback/rest": "^1.25.1"
+    "@loopback/rest": "^1.25.1",
+    "jsonpath-plus": "^3.0.0"
   },
   "devDependencies": {
     "@loopback/build": "^3.0.1",

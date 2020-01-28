@@ -35,75 +35,85 @@ Create a strategy provider that implements your custom logic :
 ```typescript
 import {inject, Provider, ValueOrPromise} from '@loopback/core';
 import {Request, Response} from '@loopback/rest';
-import {repository} from '@loopback/repository';
 import {
   CallbackBindings,
-  Callbacktrategy,
+  CallbackStrategy,
   CallbackMetadata,
   CallbackObject,
+  isRuntimeExpression,
+  resolveTriggerName,
+  resolvePayload,
 } from 'loopback-callback-component';
 
 export class CallbackStrategyProvider implements Provider<CallbackStrategy | undefined> {
-  constructor(
-    @inject(CallbackBindings.METADATA) private metadata: CallbackMetadata,
-  ) {}
+  constructor(@inject(CallbackBindings.METADATA) private metadata: CallbackMetadata) {}
 
   value(): ValueOrPromise<CallbackStrategy | undefined> {
-
     return {
-      setConfig: async (config?: Object) => {
-        const pubsubConf: PubSubConfig = {};
-        return pubsubConf;
-      },
-
       checkCallback: async (request: Request, response: Response, options?: Object) => {
         if (!this.metadata) {
-          return undefined;
+          return Promise.resolve(undefined);
         }
 
+        // use this.metadata.parent to retrieve Oas path ?
         const callbackObject: CallbackObject = {
-          path: this.metadata.path,
-          method: this.metadata.method,
+          [this.metadata.expression]: {
+            [this.metadata.method]: {
+              operationId: `${this.metadata.name}`,
+              description: `${this.metadata.name} callback`,
+              requestBody: request.body,
+              parameters: request.params,
+              // url: request.url,
+              // method: request.method,
+            },
+          },
         };
-        return callbackObject;
+        return Promise.resolve(callbackObject);
       },
 
-      // setCallback(callback: CallbackObject, request: Request, result: any) {
-      //   //  const paramName = payloadName.charAt(0).toLowerCase() + payloadName.slice(1);
-      //   let value = this.metadata.expression || '';
-      //   let topic: string;
-      //   let payload: any = result;
-      //   const resolveData = {usedPayload: Object, usedParams: Object};
-      //   // resolveData.usedPayload = requestBody;
-      //   // resolveData.usedParams = request.params;
-      //   // resolveData.usedResponse = requestBody;
+      resolveCallback: async (callback: CallbackObject, result: any) => {
+        if (!this.metadata) {
+          throw new Error('Callback metadata are mandatory to resolve the callback');
+        }
+        let value = this.metadata.expression;
+        const method = this.metadata.method;
+        const cbName = this.metadata.name;
+        const resolveData = {
+          usedPayload: callback[value][method].requestBody || {},
+          usedParams: callback[value][method].parameters,
+          usedRequestOptions: {method},
+        };
 
-      //   if (value.search(/{|}/) === -1) {
-      //     topic = this.isRuntimeExpression(value)
-      //       ? this.resolveTriggerName(value, resolveData, result)
-      //       : value;
-      //   } else {
-      //     // Replace callback expression with appropriate values
-      //     const cbParams = value.match(/{([^}]*)}/g);
-      //     //  pubsubLog(`Analyzing subscription path : ${cbParams.toString()}`);
-      //     cbParams.forEach(cbParam => {
-      //       value = value.replace(
-      //         cbParam,
-      //         this.resolveTriggerName(
-      //           cbParam.substring(1, cbParam.length - 1),
-      //           resolveData,
-      //           result,
-      //         ),
-      //       );
-      //     });
-      //     topic = value;
-      //   }
-      //   return {topic, payload};
-      // },
+        // Replace callback expression with appropriate values
+        let topic: string;
+        if (value.search(/{|}/) === -1) {
+          topic = isRuntimeExpression(value)
+            ? resolveTriggerName(cbName, value, resolveData, result)
+            : value;
+        } else {
+          const cbParams = value.match(/{([^}]*)}/g) ?? [];
+          cbParams.forEach(cbParam => {
+            value = value.replace(
+              cbParam,
+              resolveTriggerName(
+                cbName,
+                cbParam.substring(1, cbParam.length - 1),
+                resolveData,
+                result,
+              ),
+            );
+          });
+          topic = value;
+        }
 
+        const payload = resolvePayload(cbName, result, 'string');
+        // console.log('resolved callback', topic, payload);
+        return {topic, payload};
+      },
     };
   }
 }
+
 
 ```
 ### Custom sequence 
@@ -124,9 +134,8 @@ import {
 } from '@loopback/rest';
 import {
   CallbackBindings,
-  CallbackSetFn,
   CallbackCheckFn,
-  CallbackObject,
+  CallbackResolveFn
 } from 'loopback-callback-component';
 
 const SequenceActions = RestBindings.SequenceActions;
@@ -138,16 +147,10 @@ export class MySequence implements SequenceHandler {
     @inject(SequenceActions.INVOKE_METHOD) protected invoke: InvokeMethod,
     @inject(SequenceActions.SEND) public send: Send,
     @inject(SequenceActions.REJECT) public reject: Reject,
-    @inject(CallbackBindings.CALLBACK_SET) protected setCallback: CallbackSetFn,
+    @inject(CallbackBindings.CALLBACK_RESOLVE) protected resolveCallback: CallbackResolveFn,
     @inject(CallbackBindings.CALLBACK_CHECK) protected checkCallback: CallbackCheckFn,
   ) {}
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  async triggerCallback(callback: CallbackObject, result: any) {
-    // compose route and payload from CallbackObject with response, request object then ...
-    const {topic, payload} = await this.setCallback(callback, request, result);
-    // then you can publish { topic, payload } via a PubSub system
-  }
 
   async handle(context: RequestContext) {
     try {
@@ -159,7 +162,9 @@ export class MySequence implements SequenceHandler {
 
       let callback = await this.checkCallback(request, response);
       if (callback) {
-        await this.triggerCallback(callback, request, result);
+        // compose route and payload from CallbackObject with response, request object ...
+        const {topic, payload} = await this.resolveCallback(callback, request, result);
+        // then you can publish { topic, payload } via a PubSub system
       }
 
       this.send(response, result);
@@ -205,7 +210,12 @@ export class DeviceController {
   ) {}
 
   // Adding callback decorator
-  @callback(`/${devicesApiEndPoint}`, 'post')
+  @callback(
+    'deviceWatcher',
+    '/api/{$response.body#/ownerId}/devices/{$method}/{$response.body#/id}',
+    'post',
+    {path: `/${devicesApiEndPoint}`, method: 'post'},
+  )
   @post(`/${devicesApiEndPoint}`, {
     operationId: 'createDevice',
     security,
@@ -215,7 +225,7 @@ export class DeviceController {
         content: {'application/json': {schema: {'x-ts-type': Device}}},
       },
     },
-    // callbacks: <callbackName>
+    // todo add callbacks definition via decorator 
   })
   async create(@requestBody() device: Device): Promise<Device> {
     const token = getToken(this.request);
