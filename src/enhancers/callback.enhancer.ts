@@ -8,8 +8,8 @@ import {
   ResponsesObject,
   // CallbackObject
 } from '@loopback/openapi-v3';
-import {PubSubBindings} from '../keys';
-import {PubSubMetadata} from '../types';
+import {CallbackBindings} from '../keys';
+import {CallbackMetadata} from '../types';
 
 /**
  * WIP
@@ -29,7 +29,7 @@ export class CallbackSpecEnhancer implements OASEnhancer {
   parentMethod: string;
 
   constructor(
-    @inject(PubSubBindings.METADATA) private metadata: PubSubMetadata,
+    @inject(CallbackBindings.METADATA) private metadata: CallbackMetadata,
   ) {
     this.name = metadata.name;
     this.expression = metadata.expression;
