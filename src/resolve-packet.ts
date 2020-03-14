@@ -232,7 +232,6 @@ export function resolvePayload(
   result: any,
   typeOfResponse: string,
 ) {
-
   let responseBody;
   let saneData;
 
