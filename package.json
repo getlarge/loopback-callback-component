@@ -55,7 +55,7 @@
     "jsonpath-plus": "^3.0.0"
   },
   "devDependencies": {
-    "@loopback/build": "^4.0.0",
+    "@loopback/build": "^9.0.6",
     "@loopback/openapi-spec-builder": "^2.0.0",
     "@loopback/testlab": "^2.0.0",
     "@types/node": "^13.9.0",
